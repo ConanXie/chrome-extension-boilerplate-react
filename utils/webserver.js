@@ -4,10 +4,10 @@ process.env.NODE_ENV = 'development';
 process.env.ASSET_PATH = '/';
 
 var WebpackDevServer = require('webpack-dev-server'),
+  ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin'),
   webpack = require('webpack'),
   config = require('../webpack.config'),
-  env = require('./env'),
-  path = require('path');
+  env = require('./env');
 
 var options = config.chromeExtensionBoilerplate || {};
 var excludeEntriesToHotReload = options.notHotReload || [];
@@ -21,9 +21,11 @@ for (var entryName in config.entry) {
   }
 }
 
-config.plugins = [new webpack.HotModuleReplacementPlugin()].concat(
-  config.plugins || []
-);
+config.plugins = [
+  new webpack.HotModuleReplacementPlugin(),
+  new ReactRefreshWebpackPlugin(),
+  ...(config.plugins || []),
+];
 
 delete config.chromeExtensionBoilerplate;
 
@@ -31,16 +33,10 @@ var compiler = webpack(config);
 
 var server = new WebpackDevServer(
   {
-    https: false,
+    port: env.PORT,
     hot: false,
     client: false,
-    host: 'localhost',
-    port: env.PORT,
-    static: {
-      directory: path.join(__dirname, '../build'),
-    },
     devMiddleware: {
-      publicPath: `http://localhost:${env.PORT}/`,
       writeToDisk: true,
     },
     headers: {
@@ -50,10 +46,6 @@ var server = new WebpackDevServer(
   },
   compiler
 );
-
-if (process.env.NODE_ENV === 'development' && module.hot) {
-  module.hot.accept();
-}
 
 (async () => {
   await server.start();
